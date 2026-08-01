@@ -6,11 +6,6 @@ const mysql = require("mysql2/promise");
 const crypto = require('crypto');
 const { generateApiKey } = require('./utils/apiKey');
 
-const app = express();
-app.use(express.json());
-
-
-
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
@@ -18,6 +13,24 @@ const db = mysql.createPool({
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME
 });
+
+
+const app = express();
+app.use(express.json());
+app.use((req, res, next) => { req.db = db; next(); });
+
+const examsRouter = require('./routes/exams');
+const questionsRouter = require('./routes/questions');
+const enrollmentsRouter = require('./routes/enrollments');
+const resultsRouter = require('./routes/results');
+const certificatesRouter = require('./routes/certificates');
+
+app.use('/api/v1/exams', apiKeyAuth, rateLimiter, examsRouter);
+app.use('/api/v1/questions', apiKeyAuth, rateLimiter,  questionsRouter);
+app.use('/api/v1/enrollments', apiKeyAuth, rateLimiter, enrollmentsRouter);
+app.use('/api/v1/results', apiKeyAuth, rateLimiter, resultsRouter);
+app.use('/api/v1/certificates', apiKeyAuth, rateLimiter,  certificatesRouter);
+
 
 
 
@@ -31,20 +44,26 @@ const db = mysql.createPool({
   }
 })();
 
-
-
 app.post('/api/v1/keys', async (req, res) => {
   const { key_name, scopes } = req.body;
   const { rawKey, hash } = generateApiKey();
-  const userId = req.body.user_id || 1; // temporary placeholder until real user auth exists
+  const userId = req.body.user_id || 1;
 
-  await db.execute(
-    'INSERT INTO api_keys (user_id, key_name, key_hash, scopes) VALUES (?, ?, ?, ?)',
-    [userId, key_name, hash, JSON.stringify(scopes)]
-  );
-
-  res.json({ api_key: rawKey, message: 'Save this key now — it will not be shown again.' });
+  try {
+    await db.execute(
+      'INSERT INTO api_keys (user_id, key_name, key_hash, scopes) VALUES (?, ?, ?, ?)',
+      [userId, key_name, hash, JSON.stringify(scopes)]
+    );
+    res.json({ api_key: rawKey, message: 'Save this key now — it will not be shown again.' });
+  } catch (err) {
+    return res.status(500).json({ error: "Database error" });
+  }
 });
+
+ 
+ 
+
+  
 
 async function apiKeyAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -72,23 +91,6 @@ async function apiKeyAuth(req, res, next) {
   next();
 }
 
-function requireScope(scope) {
-  return (req, res, next) => {
-    const scopes = req.apiKey.scopes; 
-    if (!scopes.includes(scope)) {
-      return res.status(403).json({ error: `Missing required scope: ${scope}` });
-    }
-    next();
-  };
-}
-
-
-app.get('/api/v1/exams', apiKeyAuth,rateLimiter, requireScope('exams:read'), (req, res) =>
-     { 
-        res.json({
-            message:"Exam Data Fetched Successfully."
-        })
-      });
 
       const redis = require('redis');
 const client = redis.createClient({ url: process.env.REDIS_URL });
@@ -115,16 +117,36 @@ async function rateLimiter(req, res, next) {
   next();
 }
 
+
 app.delete('/api/v1/keys/:id', apiKeyAuth, async (req, res) => {
-  await db.execute('UPDATE api_keys SET revoked_at = NOW() WHERE id = ?', [req.params.id]);
-  res.json({ message: 'Key revoked' });
+  try {
+    await db.execute(
+      'UPDATE api_keys SET revoked_at = NOW() WHERE id = ? AND user_id = ?',
+      [req.params.id, req.apiKey.user_id]
+    );
+    res.json({ message: 'Key revoked' });
+  } catch (err) {
+    return res.status(500).json({ error: "Database error" });
+  }
 });
+
  
 
+app.use((err,req,res,next)=>{
 
+    console.error(err);
+
+    res.status(500).json({
+        error:"Internal Server Error"
+    });
+
+});
 
 app.listen(3000, () => {
     console.log("Server is running on port 3000");
 });
 
 //"sk_831f19341e17dd90811c2a42f4c4bbbf1186771edbe9318e5f68e5d4cbd5864f"
+
+//"sk_44e00e105ac82bbac0af18a02ae7a289f3eeb1a9bf6dea8f44b21bd6ad649b35",  Full Access key
+//sk_c97c8043478aa27248ede55df25bb8fde2100d4149cd99026f065f8f92796200    ReadOnly key
