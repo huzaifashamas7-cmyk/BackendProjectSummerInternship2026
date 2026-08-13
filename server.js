@@ -5,7 +5,7 @@ const express = require("express");
 const mysql = require("mysql2/promise");
 const crypto = require('crypto');
 const { generateApiKey } = require('./utils/apiKey');
-
+require('./workers/webhookWorker'); // starts the worker process
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
@@ -18,7 +18,8 @@ const db = mysql.createPool({
 const app = express();
 app.use(express.json());
 app.use((req, res, next) => { req.db = db; next(); });
-
+const webhooksRouter = require('./routes/webhooks');
+app.use('/api/v1/webhooks', apiKeyAuth, rateLimiter, webhooksRouter);
 const examsRouter = require('./routes/exams');
 const questionsRouter = require('./routes/questions');
 const enrollmentsRouter = require('./routes/enrollments');
@@ -150,3 +151,9 @@ app.listen(3000, () => {
 
 //"sk_44e00e105ac82bbac0af18a02ae7a289f3eeb1a9bf6dea8f44b21bd6ad649b35",  Full Access key
 //sk_c97c8043478aa27248ede55df25bb8fde2100d4149cd99026f065f8f92796200    ReadOnly key
+
+//sk_7fa5af613cb50aa0f783c40918b05667a263c0c85bd3fb9c51cb3e1f9bc31d8c     full Access key
+//sk_17b8009cf74ceb12c7d76f5d32b1198b29398c15f22a58cc469af51eaab7bc8c      Read ONly key
+
+//sk_7486d8f63a99223ccb24ef48985d2ed169dc4fde361d3c32b91b4254d37d82e0    week2 updated ResultWritKey
+//sk_c3a8ef80bf180fd26eba90244ebc11c05343ddb236c3424903f0b6ecf1983eaa   webhook subscription key
