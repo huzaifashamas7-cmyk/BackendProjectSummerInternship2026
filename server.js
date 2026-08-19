@@ -14,10 +14,19 @@ const db = mysql.createPool({
     database: process.env.DB_NAME
 });
 
+const sandboxDb = mysql.createPool({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_SANDBOX_NAME
+});
+
 
 const app = express();
 app.use(express.json());
-app.use((req, res, next) => { req.db = db; next(); });
+const requestLogger = require('./middleware/requestLogger');
+app.use(requestLogger(db));
 const webhooksRouter = require('./routes/webhooks');
 app.use('/api/v1/webhooks', apiKeyAuth, rateLimiter, webhooksRouter);
 const examsRouter = require('./routes/exams');
@@ -45,6 +54,29 @@ app.use('/api/v1/certificates', apiKeyAuth, rateLimiter,  certificatesRouter);
   }
 })();
 
+app.get('/api/v1/keys/:id/logs', apiKeyAuth, async (req, res) => {
+  const keyId = req.params.id;
+
+  // Only allow a key's owner to view its own logs
+  if (parseInt(keyId) !== req.apiKey.id) {
+    return res.status(403).json({ error: 'You can only view logs for your own API key' });
+  }
+
+  try {
+    const [rows] = await db.execute(
+      'SELECT * FROM api_request_logs WHERE api_key_id = ? ORDER BY created_at DESC LIMIT 1000',
+      [keyId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Failed to fetch logs:', err.message);
+    return res.status(500).json({ error: 'Database error' });
+  }
+});
+
+
+
+
 app.post('/api/v1/keys', async (req, res) => {
   const { key_name, scopes } = req.body;
   const { rawKey, hash } = generateApiKey();
@@ -61,10 +93,26 @@ app.post('/api/v1/keys', async (req, res) => {
   }
 });
 
- 
- 
 
-  
+
+app.post('/api/v1/sandbox/keys', async (req, res) => {
+  const { key_name, scopes } = req.body;
+  const { rawKey, hash } = generateApiKey();
+  const userId = req.body.user_id || 1;
+
+  try {
+    await sandboxDb.execute(
+      'INSERT INTO api_keys (user_id, key_name, key_hash, scopes) VALUES (?, ?, ?, ?)',
+      [userId, key_name, hash, JSON.stringify(scopes)]
+    );
+    res.json({ api_key: rawKey, message: 'Sandbox key created — save it now, it will not be shown again.' });
+  } catch (err) {
+    console.error('Sandbox key creation error:', err); // ADD THIS LINE
+    return res.status(500).json({ error: 'Database error' });
+  }
+});   
+
+
 
 async function apiKeyAuth(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -75,10 +123,21 @@ async function apiKeyAuth(req, res, next) {
   const rawKey = authHeader.split(' ')[1];
   const hash = crypto.createHash('sha256').update(rawKey).digest('hex');
 
-  const [rows] = await db.execute(
+  // First, check production keys
+  let [rows] = await db.execute(
     'SELECT * FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL',
     [hash]
   );
+  let targetDb = db;
+
+  // If not found in production, check sandbox keys
+  if (rows.length === 0) {
+    [rows] = await sandboxDb.execute(
+      'SELECT * FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL',
+      [hash]
+    );
+    targetDb = sandboxDb;
+  }
 
   if (rows.length === 0) return res.status(401).json({ error: 'Invalid or revoked API key' });
 
@@ -87,10 +146,16 @@ async function apiKeyAuth(req, res, next) {
     return res.status(401).json({ error: 'API key expired' });
   }
 
-  req.apiKey = keyRecord; 
-   
+  req.apiKey = keyRecord;
+  req.db = targetDb; // this is the key change — every route now automatically uses the right database
   next();
 }
+ 
+ 
+
+  
+
+
 
 
       const redis = require('redis');
@@ -147,6 +212,18 @@ app.listen(3000, () => {
     console.log("Server is running on port 3000");
 });
 
+setInterval(async () => {
+  try {
+    const [result] = await db.execute(
+      'DELETE FROM api_request_logs WHERE created_at < NOW() - INTERVAL 30 DAY'
+    );
+    console.log(`Purged ${result.affectedRows} old log entries`);
+  } catch (err) {
+    console.error('Log purge failed:', err.message);
+  }
+}, 24 * 60 * 60 * 1000);
+
+
 //"sk_831f19341e17dd90811c2a42f4c4bbbf1186771edbe9318e5f68e5d4cbd5864f"
 
 //"sk_44e00e105ac82bbac0af18a02ae7a289f3eeb1a9bf6dea8f44b21bd6ad649b35",  Full Access key
@@ -157,3 +234,8 @@ app.listen(3000, () => {
 
 //sk_7486d8f63a99223ccb24ef48985d2ed169dc4fde361d3c32b91b4254d37d82e0    week2 updated ResultWritKey
 //sk_c3a8ef80bf180fd26eba90244ebc11c05343ddb236c3424903f0b6ecf1983eaa   webhook subscription key
+
+// sk_9e0ad5b254b0c4d7456c8479ad4dc319c950d51cc1ec30f666e934823453338c   sandbox key
+// sk_64f012c54af067b63f0d93034fd01a4b9e87e11be419b4c6d655ba7d459469cd  
+// sk_22a73835ed904e59338a89a7a04095dbe0d84c5b6725937e4f28b7dc95ad7c22
+
