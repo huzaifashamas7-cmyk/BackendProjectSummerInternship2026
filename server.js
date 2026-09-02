@@ -1,6 +1,6 @@
 
 require('dotenv').config();
-
+const cors = require('cors');
 const express = require("express");
 const mysql = require("mysql2/promise");
 const crypto = require('crypto');
@@ -22,8 +22,9 @@ const sandboxDb = mysql.createPool({
     database: process.env.DB_SANDBOX_NAME
 });
 
-
 const app = express();
+app.use(cors());
+app.use(express.json());
 app.use(express.json());
 const requestLogger = require('./middleware/requestLogger');
 app.use(requestLogger(db));
@@ -239,3 +240,6 @@ setInterval(async () => {
 // sk_64f012c54af067b63f0d93034fd01a4b9e87e11be419b4c6d655ba7d459469cd  
 // sk_22a73835ed904e59338a89a7a04095dbe0d84c5b6725937e4f28b7dc95ad7c22
 
+// sk_553d6dfee22ebe3ea19d3041037904cf2f38b14a29a0952888aae5b5fe1666e8   week5 key
+// sk_bf840c2ce8613a5b134b7ced5840ec2fec20e6017e8a2301738202fe2b8fae01
+//sk_aed81d0cd10f678eea9de64f50df2e4fa1318b5a71f46ffc6e432880bdb94f73
