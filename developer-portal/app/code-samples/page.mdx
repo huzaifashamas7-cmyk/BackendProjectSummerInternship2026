@@ -1,0 +1,138 @@
+# Code Samples
+
+Examples for authenticating and making requests in cURL, Python, and JavaScript.
+
+## Create an API key
+
+### cURL
+
+```bash
+curl -X POST http://localhost:3000/api/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key_name": "My App Key",
+    "scopes": ["exams:read", "exams:write"],
+    "user_id": 1
+  }'
+```
+
+### Python
+
+```python
+import requests
+
+response = requests.post(
+    "http://localhost:3000/api/v1/keys",
+    json={
+        "key_name": "My App Key",
+        "scopes": ["exams:read", "exams:write"],
+        "user_id": 1
+    }
+)
+
+data = response.json()
+print(data["api_key"])
+```
+
+### JavaScript
+
+```javascript
+const response = await fetch("http://localhost:3000/api/v1/keys", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    key_name: "My App Key",
+    scopes: ["exams:read", "exams:write"],
+    user_id: 1
+  })
+});
+
+const data = await response.json();
+console.log(data.api_key);
+```
+
+## List exams
+
+### cURL
+
+```bash
+curl http://localhost:3000/api/v1/exams \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+### Python
+
+```python
+import requests
+
+response = requests.get(
+    "http://localhost:3000/api/v1/exams",
+    headers={"Authorization": "Bearer YOUR_API_KEY"}
+)
+
+exams = response.json()
+print(exams)
+```
+
+### JavaScript
+
+```javascript
+const response = await fetch("http://localhost:3000/api/v1/exams", {
+  headers: { "Authorization": "Bearer YOUR_API_KEY" }
+});
+
+const exams = await response.json();
+console.log(exams);
+```
+
+## Create an exam
+
+### cURL
+
+```bash
+curl -X POST http://localhost:3000/api/v1/exams \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Math Basics",
+    "description": "Intro exam",
+    "duration_minutes": 60
+  }'
+```
+
+### Python
+
+```python
+import requests
+
+response = requests.post(
+    "http://localhost:3000/api/v1/exams",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    json={
+        "title": "Math Basics",
+        "description": "Intro exam",
+        "duration_minutes": 60
+    }
+)
+
+print(response.json())
+```
+
+### JavaScript
+
+```javascript
+const response = await fetch("http://localhost:3000/api/v1/exams", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    title: "Math Basics",
+    description: "Intro exam",
+    duration_minutes: 60
+  })
+});
+
+console.log(await response.json());
+```

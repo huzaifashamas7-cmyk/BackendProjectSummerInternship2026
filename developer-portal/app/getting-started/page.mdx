@@ -1,0 +1,38 @@
+# Getting Started
+
+Welcome to the Exam Platform Public API. This guide walks you through authenticating and making your first request.
+
+## 1. Create an API key
+
+Every request to the API must include an API key. Create one by sending a request to the key creation endpoint:
+
+```bash
+curl -X POST http://localhost:3000/api/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{
+    "key_name": "My First Key",
+    "scopes": ["exams:read"],
+    "user_id": 1
+  }'
+```
+
+This returns your API key. **Save it immediately** — for security reasons, it is only shown once and cannot be retrieved again.
+
+## 2. Make your first request
+
+Include your API key in the `Authorization` header as a Bearer token:
+
+```bash
+curl http://localhost:3000/api/v1/exams \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+## 3. Understand scopes
+
+API keys are restricted to specific scopes, such as `exams:read` or `exams:write`. If your key doesn't have the required scope for an endpoint, you'll receive a `403 Forbidden` response.
+
+## Next steps
+
+- Explore the full [API Reference](/api-reference) for every available endpoint
+- Learn about [rate limiting](/rate-limiting) and response headers
+- Try the [sandbox environment](/sandbox) to test safely without affecting real data

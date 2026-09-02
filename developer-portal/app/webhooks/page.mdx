@@ -1,0 +1,81 @@
+# Webhooks
+
+Webhooks let your application receive real-time notifications when events happen on the Exam Platform.
+
+## Event catalogue
+
+| Event | Description |
+|---|---|
+| `exam.started` | Fired when a student begins an exam |
+| `exam.submitted` | Fired when a student submits an exam |
+| `result.published` | Fired when a result is created |
+| `certificate.issued` | Fired when a certificate is issued |
+
+## Example payload
+
+```json
+{
+  "event": "result.published",
+  "data": {
+    "id": 5,
+    "student_id": 1,
+    "exam_id": 1,
+    "score": 88
+  },
+  "timestamp": "2026-08-07T17:25:40.567Z"
+}
+```
+
+## Registering a webhook
+
+```bash
+curl -X POST http://localhost:3000/api/v1/webhooks \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_type": "result.published",
+    "url": "https://your-app.com/webhook-endpoint"
+  }'
+```
+
+This returns a `secret` — save it. You will use it to verify that incoming webhooks genuinely came from the Exam Platform.
+
+## Verifying signatures
+
+Every webhook request includes an `X-Signature` header, an HMAC-SHA256 hash of the payload, signed with your subscription's secret. Always verify this before trusting a webhook.
+
+### Node.js example
+
+```javascript
+const crypto = require("crypto");
+
+function verifySignature(payload, signature, secret) {
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(JSON.stringify(payload))
+    .digest("hex");
+
+  return signature === expected;
+}
+```
+
+### Python example
+
+```python
+import hmac
+import hashlib
+import json
+
+def verify_signature(payload, signature, secret):
+    expected = hmac.new(
+        secret.encode(),
+        json.dumps(payload).encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(signature, expected)
+```
+
+## Retry behavior
+
+If your endpoint doesn't respond successfully, the platform retries delivery up to 5 times using exponential backoff (approximately 2s, 4s, 8s, 16s, and 32s between attempts).

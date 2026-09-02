@@ -1,0 +1,35 @@
+# Rate Limiting
+
+To ensure fair usage, the API enforces per-key rate limits.
+
+## How it works
+
+Each API key is allowed a fixed number of requests per hour (1,000 by default). Every response includes headers showing your current usage:
+
+- `X-RateLimit-Limit` — your total allowed requests per hour
+- `X-RateLimit-Remaining` — how many requests you have left in the current window
+- `X-RateLimit-Reset` — how many seconds until your limit resets
+
+## Example response headers
+
+```text
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 998
+X-RateLimit-Reset: 3542
+```
+
+## When you exceed the limit
+
+If you exceed your rate limit, the API responds with a `429 Too Many Requests` status and a `Retry-After` header telling you how many seconds to wait before trying again.
+
+```json
+{
+  "error": "Rate limit exceeded"
+}
+```
+
+## Best practices
+
+- Cache responses where possible to reduce unnecessary requests
+- Check `X-RateLimit-Remaining` before making bulk requests
+- Implement retry logic that respects the `Retry-After` header

@@ -1,0 +1,316 @@
+openapi: 3.0.3
+info:
+  title: Exam Platform Public API
+  version: "1.0.0"
+  description: A versioned public REST API for exams, enrollments, results, certificates, and webhooks.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development server
+
+paths:
+  /keys:
+    post:
+      summary: Create a new API key
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                key_name:
+                  type: string
+                  example: "My App Key"
+                scopes:
+                  type: array
+                  items:
+                    type: string
+                  example: ["exams:read", "exams:write"]
+                user_id:
+                  type: integer
+                  example: 1
+      responses:
+        '200':
+          description: API key created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  api_key:
+                    type: string
+                  message:
+                    type: string
+
+  /keys/{id}:
+    delete:
+      summary: Revoke an API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Key revoked
+
+  /keys/{id}/logs:
+    get:
+      summary: Get request logs for an API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Array of the last 1000 requests for this key
+
+  /exams:
+    get:
+      summary: List all exams
+      responses:
+        '200':
+          description: Array of exams
+    post:
+      summary: Create a new exam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: "Math Basics"
+                description:
+                  type: string
+                duration_minutes:
+                  type: integer
+                  example: 60
+      responses:
+        '201':
+          description: Exam created
+
+  /exams/{id}:
+    get:
+      summary: Get a single exam by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Exam object
+        '404':
+          description: Exam not found
+    put:
+      summary: Update an exam
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                duration_minutes:
+                  type: integer
+      responses:
+        '200':
+          description: Exam updated
+
+  /questions:
+    get:
+      summary: List all questions
+      responses:
+        '200':
+          description: Array of questions
+    post:
+      summary: Create a new question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                exam_id:
+                  type: integer
+                question_text:
+                  type: string
+                options:
+                  type: array
+                  items:
+                    type: string
+                correct_option:
+                  type: integer
+      responses:
+        '201':
+          description: Question created
+
+  /enrollments:
+    get:
+      summary: List all enrollments
+      responses:
+        '200':
+          description: Array of enrollments
+    post:
+      summary: Enroll a student in an exam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_id:
+                  type: integer
+                exam_id:
+                  type: integer
+      responses:
+        '201':
+          description: Enrollment created
+
+  /enrollments/{id}:
+    delete:
+      summary: Unenroll a student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Unenrolled
+
+  /results:
+    get:
+      summary: List all results
+      responses:
+        '200':
+          description: Array of results
+    post:
+      summary: Submit a new result
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                student_id:
+                  type: integer
+                exam_id:
+                  type: integer
+                score:
+                  type: number
+      responses:
+        '201':
+          description: Result created (also triggers a result.published webhook)
+
+  /results/student/{studentId}:
+    get:
+      summary: Get results for a specific student
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Array of results for the student
+
+  /certificates/{id}:
+    get:
+      summary: Get a certificate by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Certificate object
+        '404':
+          description: Certificate not found
+
+  /certificates/verify/{code}:
+    get:
+      summary: Verify a certificate by its code
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Certificate is valid
+        '404':
+          description: Invalid certificate code
+
+  /webhooks:
+    get:
+      summary: List your webhook subscriptions
+      responses:
+        '200':
+          description: Array of webhook subscriptions
+    post:
+      summary: Register a new webhook subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event_type:
+                  type: string
+                  example: "result.published"
+                url:
+                  type: string
+                  example: "https://your-app.com/webhook"
+      responses:
+        '201':
+          description: Subscription created
+
+  /webhooks/{id}:
+    delete:
+      summary: Delete a webhook subscription
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Subscription deleted
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+security:
+  - BearerAuth: []
