@@ -25,7 +25,17 @@ const sandboxDb = mysql.createPool({
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.json());
+
+const OpenApiValidator = require('express-openapi-validator');
+const path = require('path');
+app.use(
+  OpenApiValidator.middleware({
+    apiSpec: path.join(__dirname, 'openapi.yaml'),
+    validateRequests: true,
+    validateResponses: false,
+  })
+);
+
 const requestLogger = require('./middleware/requestLogger');
 app.use(requestLogger(db));
 const webhooksRouter = require('./routes/webhooks');
@@ -90,8 +100,9 @@ app.post('/api/v1/keys', async (req, res) => {
     );
     res.json({ api_key: rawKey, message: 'Save this key now — it will not be shown again.' });
   } catch (err) {
-    return res.status(500).json({ error: "Database error" });
-  }
+  console.error('POST /api/v1/keys failed:', err);
+  return res.status(500).json({ error: "Database error" });
+}
 });
 
 
@@ -199,14 +210,12 @@ app.delete('/api/v1/keys/:id', apiKeyAuth, async (req, res) => {
 
  
 
-app.use((err,req,res,next)=>{
-
-    console.error(err);
-
-    res.status(500).json({
-        error:"Internal Server Error"
-    });
-
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(err.status || 500).json({
+    error: err.message,
+    ...(err.errors && { details: err.errors }),
+  });
 });
 
 app.listen(3000, () => {
@@ -243,3 +252,5 @@ setInterval(async () => {
 // sk_553d6dfee22ebe3ea19d3041037904cf2f38b14a29a0952888aae5b5fe1666e8   week5 key
 // sk_bf840c2ce8613a5b134b7ced5840ec2fec20e6017e8a2301738202fe2b8fae01
 //sk_aed81d0cd10f678eea9de64f50df2e4fa1318b5a71f46ffc6e432880bdb94f73
+//sk_7df289a840c7b92f86a53a488fd011698b5bc07f4ad4eb180be3d9b4803b25e9
+//sk_2eff5d8f8f2d211cb325088c686cd53f84815cfdd93795769864eeefcb20919b

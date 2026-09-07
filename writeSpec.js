@@ -1,4 +1,6 @@
-openapi: 3.0.3
+const fs = require('fs');
+
+const content = `openapi: 3.0.3
 info:
   title: Exam Platform Public API
   version: "1.0.0"
@@ -322,3 +324,7 @@ components:
 
 security:
   - BearerAuth: []
+`;
+
+fs.writeFileSync('openapi.yaml', content, 'utf8');
+console.log('openapi.yaml written successfully');

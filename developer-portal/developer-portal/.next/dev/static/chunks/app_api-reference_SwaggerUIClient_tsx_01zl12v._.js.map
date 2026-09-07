@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///D:/FI/Summer%20Internship%2026/Public%20API%20and%20Developer%20Portal/developer-portal/app/api-reference/SwaggerUIClient.tsx"],"sourcesContent":["'use client';\r\n\r\nimport SwaggerUI from 'swagger-ui-react';\r\nimport 'swagger-ui-react/swagger-ui.css';\r\n\r\nexport default function SwaggerUIClient() {\r\n  return <SwaggerUI url=\"/openapi.yaml\" />;\r\n}"],"names":["SwaggerUIClient","url"],"mappings":";;;;;AAEA;AAFA;;;;AAKe,SAASA;IACtB,qBAAO,6LAAC,8JAAS;QAACC,KAAI;;;;;;AACxB;KAFwBD"}}]
+}
