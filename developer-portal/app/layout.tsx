@@ -31,6 +31,7 @@ export default function RootLayout({
           <Link href="/rate-limiting" style={{ textDecoration: 'none', color: '#374151' }}>Rate Limiting</Link>
           <Link href="/sandbox" style={{ textDecoration: 'none', color: '#374151' }}>Sandbox</Link>
           <Link href="/code-samples" style={{ textDecoration: 'none', color: '#374151' }}>Code Samples</Link>
+          <Link href="/sdk" style={{ textDecoration: 'none', color: '#374151' }}>SDK</Link>
         </nav>
         {children}
       </body>

@@ -1,0 +1,58 @@
+# Client SDK
+
+A JavaScript client library is available, auto-generated from our OpenAPI specification. It includes typed methods for every endpoint, request/response models, and built-in Bearer token authentication handling.
+
+## Installation
+
+Download the SDK folder, then install its dependencies:
+
+```bash
+npm install
+npm run build
+```
+
+## Usage example
+
+```javascript
+var ExamPlatformPublicApi = require('exam_platform_public_api');
+
+var defaultClient = ExamPlatformPublicApi.ApiClient.instance;
+
+// Configure your API key
+var BearerAuth = defaultClient.authentications['BearerAuth'];
+BearerAuth.accessToken = "YOUR_API_KEY";
+
+var api = new ExamPlatformPublicApi.DefaultApi();
+
+// List all exams
+api.examsGet(function(error, data, response) {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log('Exams:', data);
+  }
+});
+
+// Create a new exam
+var examData = {
+  title: "Math Basics",
+  description: "Intro exam",
+  duration_minutes: 60
+};
+
+api.examsPost(examData, function(error, data, response) {
+  if (error) {
+    console.error(error);
+  } else {
+    console.log('Exam created:', data);
+  }
+});
+```
+
+## Available methods
+
+The SDK covers every endpoint in the API, including key management, exams, questions, enrollments, results, certificates, and webhooks. Full method documentation is included in the SDK's own `docs/` folder.
+
+## Regenerating the SDK
+
+The SDK is generated directly from our OpenAPI spec using [openapi-generator](https://openapi-generator.tech). Whenever the API changes, the SDK can be regenerated to stay in sync automatically, rather than being maintained by hand.

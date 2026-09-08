@@ -277,6 +277,14 @@
     position: fixed;
   }
 
+  .relative {
+    position: relative;
+  }
+
+  .static {
+    position: static;
+  }
+
   .mx-auto {
     margin-inline: auto;
   }
@@ -778,6 +786,10 @@
 
   .block {
     display: block;
+  }
+
+  .contents {
+    display: contents;
   }
 
   .flex {
